@@ -27,8 +27,8 @@ module "runner-mig" {
   max_replicas        = sum([var.num_instances, 1])
   gh_runner_label     = "${var.project_name}-runner"
   service_account     = module.cloudbuild_bootstrap.project_service_account
-  source_image        = var.source_image_family
-  source_image_family = var.source_image_project
+  source_image_family  = var.source_image_family
+  source_image_project = var.source_image_project
   subnet_ip           = var.runner_subnet_ip
 
   depends_on = [google_project_iam_member.rnr_sa_prj_perms]

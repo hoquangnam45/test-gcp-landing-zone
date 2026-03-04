@@ -122,6 +122,9 @@ resource "google_storage_bucket" "org_terraform_state" {
   encryption {
     default_kms_key_name = module.kms.keys["${var.project_prefix}-key"]
   }
+  depends_on = [
+    google_project_iam_binding.gs_encrypt_decrypt
+  ]
 }
 
 //Creating folder to store UI evidence
@@ -139,7 +142,8 @@ resource "google_storage_bucket_object" "ui_evidence" {
  ***********************************************/
 resource "google_project_iam_binding" "gs_encrypt_decrypt" {
   members = [
-  "serviceAccount: service-${module.seed_project.project_number}@gs-project-accounts.iam.gserviceaccount.com"]
+    "serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"
+  ]
   project = module.seed_project.project_id
   role    = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
 }

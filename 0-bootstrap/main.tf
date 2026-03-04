@@ -158,6 +158,8 @@ module "cloudbuild_bootstrap" {
 
 // Standalone repo for Terraform-validator policies.
 // This repo does not need to trigger builds in Cloud Build.
+// DEPRECATED: Cloud Source Repositories is deprecated by Google Cloud and new repositories cannot be created.
+/*
 resource "google_sourcerepo_repository" "gcp_policies" {
   project = module.cloudbuild_bootstrap.cloudbuild_project_id
   name    = "gcp-policies"
@@ -166,6 +168,7 @@ resource "google_sourcerepo_repository" "gcp_policies" {
     module.cloudbuild_bootstrap.csr_repos
   ]
 }
+*/
 
 resource "google_project_iam_member" "project_source_reader" {
   project = module.cloudbuild_bootstrap.cloudbuild_project_id

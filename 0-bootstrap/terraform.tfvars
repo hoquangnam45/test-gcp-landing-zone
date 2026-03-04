@@ -1,5 +1,5 @@
-group_org_admins = ""  # Distribution List (DL) for Google Group of GCP Organization Administrators.
-group_billing_admins = ""  # Distribution List (DL) for Google Group of GCP Billing Administrators.
+group_org_admins = "org-admins@alphabkteam.ovh"  # Distribution List (DL) for Google Group of GCP Organization Administrators.
+group_billing_admins = "billing-admins@alphabkteam.ovh"  # Distribution List (DL) for Google Group of GCP Billing Administrators.
 billing_data_users = ""  # Distribution List (DL) for Google Workspace or Cloud Identity group with access to the billing data set.
 monitoring_workspace_users = ""  # Distribution List (DL) for Google Workspace or Cloud Identity group with access to Monitoring Workspaces.
 
@@ -15,20 +15,19 @@ cto_elevated_security_operations_group = ""  # Distribution List (DL) for Google
 cto_operations_group = ""  # Distribution List (DL) for Google Workspace or Cloud Identity group responsible for operations.
 cto_core_networking_operations_group = ""  # Distribution List (DL) for Google Workspace or Cloud Identity group responsible for network operations.
 cto_user_management_operations_group = ""  # Distribution List (DL) for Google Workspace or Cloud Identity group responsible for management operations.
-cto_audit_compliance_operations_group = ""  # Distribution List (DL) for Google Workspace or Cloud Identity group responsible for audit and compliance.
+cto_audit_compliance_operations_group = "cto-audit-compliance-operations-group@alphabkteam.ovh"  # Distribution List (DL) for Google Workspace or Cloud Identity group responsible for audit and compliance.
 
 # Other group
 cfo = ""  # Distribution List (DL) for Google Workspace or Cloud Identity group of billing data users.
-
-org_id = ""  # 12-digit GCP organization ID.
-billing_account = ""  # Billing account ID in the format XXXXXX-YYYYYY-ZZZZZZ.
-default_region = ""  # Example: asia-southeast1.
+org_id = "665833051482"  # 12-digit GCP organization ID.
+billing_account = "017B25-34FEEF-3347D6"  # Billing account ID in the format XXXXXX-YYYYYY-ZZZZZZ.
+default_region = "asia-east1"  # Example: asia-southeast1.
 parent_folder = ""  # Used if LZ is to be deployed under a folder.
-project_prefix = ""  # Example: prj.
-folder_prefix = ""  # Example: fldr.
-bucket_prefix = ""  # Example: bkt.
-log_sink_prefix = ""  # Example: sk.
-project_name = ""  # Example: cldcvr.
+project_prefix = "prj"  # Example: prj.
+folder_prefix = "fldr"  # Example: fldr.
+bucket_prefix = "bkt"  # Example: bkt.
+log_sink_prefix = "sk"  # Example: sk.
+project_name = "cdcvnlz"  # Example: cldcvr.
 primary_contact = ""  # Example: varun_at_cldcvr_com.
 secondary_contact = ""  # Example: sachi_at_cldcvr_com.
 vpc_prefix = "vpc"      # VPC prefix used to create the vpc 
@@ -43,12 +42,17 @@ gar_repo_name = ""  # Example: gcf-lz-image (Name of the artifactory repo to be 
 domains_to_allow = ["<DOMAIN NAME>"]  # Example: godmode.in.
 default_region2 = ""  # 2nd region required for peering; example: us-west1.
 domain = ""  # The DNS name of the peering managed zone. Must end with a period. For example: cldcvr.com.
-enable_env_log_sink = True  # Enable environment-level log sink.
-enable_restricted_network = False  # Restricted network, project, and service perimeter.
-enable_interconnect_projects = True  # Enable to create interconnect projects.
-d_enable_dedicated_interconnect = False  # Set to true if you want to create a dedicated interconnect.
-restricted_enable_partner_interconnect = False  # Set to true if you want to create a restricted partner interconnect.
-shared_enable_partner_interconnect = False  # Set to true if you want to create a shared partner interconnect.
+enable_env_log_sink = true
+# Restricted network, project, and service perimeter.
+enable_restricted_network = false
+# Enable to create interconnect projects.
+enable_interconnect_projects = true
+# Set to true if you want to create a dedicated interconnect.
+d_enable_dedicated_interconnect = false
+# Set to true if you want to create a restricted partner interconnect.
+restricted_enable_partner_interconnect = false
+# Set to true if you want to create a shared partner interconnect.
+shared_enable_partner_interconnect = false
 runner_subnet_ip = "192.168.0.0/24"  # The subnet range in which the runner instances will be built. For example, 192.168.168.0/24.
 git_pvt_key_scrt_name = ""  # The name/secret ID that holds the private key for the deploy keys added to the GitHub repo.
 custom_labels = {}  # Customer-designed labels for the project.

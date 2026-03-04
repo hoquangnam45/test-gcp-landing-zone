@@ -21,7 +21,7 @@ locals {
   }
   cloudbuild_project_id       = var.project_id != "" ? var.project_id : format("%s-%s", var.project_prefix, "cloudbuild")
   gar_repo_name               = var.gar_repo_name != "" ? var.gar_repo_name : format("%s-%s", var.project_prefix, "tf-runners")
-  cloudbuild_apis             = ["cloudbuild.googleapis.com", "sourcerepo.googleapis.com", "cloudkms.googleapis.com", "artifactregistry.googleapis.com"]
+  cloudbuild_apis             = ["cloudbuild.googleapis.com", "cloudkms.googleapis.com", "artifactregistry.googleapis.com"]
   impersonation_enabled_count = var.sa_enable_impersonation == true ? 1 : 0
   activate_apis               = distinct(concat(var.activate_apis, local.cloudbuild_apis))
   apply_branches_regex        = "^(${join("|", var.terraform_apply_branches)})$"
@@ -74,6 +74,22 @@ resource "google_project_iam_member" "org_admins_cloudbuild_viewer" {
   Cloudbuild Artifact bucket
 *******************************************/
 
+resource "google_service_account" "cloudbuild_sa" {
+  project      = module.cloudbuild_project.project_id
+  account_id   = "cloudbuild-runner-sa"
+  display_name = "Custom Cloud Build Runner Account"
+  description  = "Service account used by Cloud Build to execute CI/CD pipelines"
+}
+
+resource "time_sleep" "wait_for_sa_propagation" {
+  depends_on      = [google_service_account.cloudbuild_sa]
+  create_duration = "30s"
+}
+
+data "google_storage_project_service_account" "gcs_sa" {
+  project = module.cloudbuild_project.project_id
+}
+
 resource "google_storage_bucket" "cloudbuild_artifacts" {
   project                     = module.cloudbuild_project.project_id
   name                        = format("%s-%s-%s", var.project_prefix, "cloudbuild-artifacts", random_id.suffix.hex)
@@ -87,6 +103,9 @@ resource "google_storage_bucket" "cloudbuild_artifacts" {
     retention_period = local.retention_policy.retention_period * 24 * 60 * 60
     is_locked        = local.retention_policy.is_locked
   }
+  depends_on = [
+    google_kms_crypto_key_iam_binding.cloudbuild_crypto_key_decrypter
+  ]
 }
 
 /******************************************
@@ -125,9 +144,9 @@ resource "google_kms_crypto_key_iam_binding" "cloudbuild_crypto_key_decrypter" {
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
 
   members = [
-    "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com",
+    "serviceAccount:${google_service_account.cloudbuild_sa.email}",
     "serviceAccount:${var.terraform_sa_email}",
-    "serviceAccount:service-${module.cloudbuild_project.project_number}@gs-project-accounts.iam.gserviceaccount.com"
+    "serviceAccount:${data.google_storage_project_service_account.gcs_sa.email_address}"
   ]
 }
 
@@ -259,11 +278,16 @@ resource "null_resource" "cloudbuild_terraform_builder" {
       gcloud builds submit ${path.module}/cloudbuild_builder/ \
       --project ${module.cloudbuild_project.project_id} \
       --config=${path.module}/cloudbuild_builder/cloudbuild.yaml \
-      --substitutions=_TERRAFORM_VERSION=${var.terraform_version},_TERRAFORM_VALIDATOR_RELEASE=${var.terraform_validator_release},_REGION=${google_artifact_registry_repository.tf-image-repo.location},_REPOSITORY=${local.gar_name}
+      --gcs-source-staging-dir=gs://${google_storage_bucket.cloudbuild_artifacts.name}/source \
+      --service-account=projects/${module.cloudbuild_project.project_id}/serviceAccounts/${google_service_account.cloudbuild_sa.email} \
+      --substitutions=_TERRAFORM_VERSION=${var.terraform_version},_REGION=${google_artifact_registry_repository.tf-image-repo.location},_REPOSITORY=${local.gar_name}
   EOT
   }
   depends_on = [
-    google_artifact_registry_repository_iam_member.terraform-image-iam
+    google_artifact_registry_repository_iam_member.terraform-image-iam,
+    module.cloudbuild_project,
+    google_service_account.cloudbuild_sa,
+    google_storage_bucket_iam_member.cloudbuild_artifacts_iam
   ]
 }
 
@@ -274,7 +298,15 @@ resource "null_resource" "cloudbuild_terraform_builder" {
 resource "google_storage_bucket_iam_member" "cloudbuild_artifacts_iam" {
   bucket = google_storage_bucket.cloudbuild_artifacts.name
   role   = "roles/storage.admin"
-  member = "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com"
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+}
+
+resource "google_project_iam_member" "cloudbuild_runner_log_writer" {
+  project = module.cloudbuild_project.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+  depends_on = [time_sleep.wait_for_sa_propagation]
 }
 
 resource "google_artifact_registry_repository_iam_member" "terraform-image-iam" {
@@ -284,7 +316,9 @@ resource "google_artifact_registry_repository_iam_member" "terraform-image-iam" 
   location   = google_artifact_registry_repository.tf-image-repo.location
   repository = google_artifact_registry_repository.tf-image-repo.name
   role       = "roles/artifactregistry.writer"
-  member     = "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com"
+  member     = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+  depends_on = [time_sleep.wait_for_sa_propagation]
 }
 
 resource "google_service_account_iam_member" "cloudbuild_terraform_sa_impersonate_permissions" {
@@ -292,7 +326,9 @@ resource "google_service_account_iam_member" "cloudbuild_terraform_sa_impersonat
 
   service_account_id = var.terraform_sa_name
   role               = "roles/iam.serviceAccountTokenCreator"
-  member             = "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com"
+  member             = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+  depends_on = [time_sleep.wait_for_sa_propagation]
 }
 
 resource "google_organization_iam_member" "cloudbuild_serviceusage_consumer" {
@@ -300,7 +336,9 @@ resource "google_organization_iam_member" "cloudbuild_serviceusage_consumer" {
 
   org_id = var.org_id
   role   = "roles/serviceusage.serviceUsageConsumer"
-  member = "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com"
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+  depends_on = [time_sleep.wait_for_sa_propagation]
 }
 
 # Required to allow cloud build to access state with impersonation.
@@ -309,5 +347,7 @@ resource "google_storage_bucket_iam_member" "cloudbuild_state_iam" {
 
   bucket = var.terraform_state_bucket
   role   = "roles/storage.admin"
-  member = "serviceAccount:${module.cloudbuild_project.project_number}@cloudbuild.gserviceaccount.com"
+  member = "serviceAccount:${google_service_account.cloudbuild_sa.email}"
+
+  depends_on = [time_sleep.wait_for_sa_propagation]
 }

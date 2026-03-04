@@ -256,9 +256,9 @@ variable "runner_repo_owner" {
 }
 
 variable "source_image_family" {
-  description = "Source Image family of the image from which to initialize the disk. for e.g. ubuntu-2004-lts"
+  description = "Source Image family of the image from which to initialize the disk. for e.g. ubuntu-2404-lts-amd64"
   type        = string
-  default     = "ubuntu-2004-lts"
+  default     = "ubuntu-2404-lts-amd64"
 }
 
 variable "source_image_project" {
