@@ -17,15 +17,17 @@
 
 terraform {
   backend "gcs" {
-    bucket = "UPDATE_BACKEND_BUCKET"
+    bucket = "bkt-b-tfstate-187a"
     prefix = "1-org/"
+    impersonate_service_account = "org-terraform@prj-b-seed-672c.iam.gserviceaccount.com"
   }
 }
 
 data "terraform_remote_state" "bootstrap" {
   backend = "gcs"
   config = {
-    bucket = "UPDATE_BACKEND_BUCKET"
+    bucket = "bkt-b-tfstate-187a"
     prefix = "0-bootstrap/"
+    impersonate_service_account = "org-terraform@prj-b-seed-672c.iam.gserviceaccount.com"
   }
 }
