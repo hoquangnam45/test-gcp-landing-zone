@@ -52,6 +52,7 @@ module "cloudbuild_project" {
   activate_apis               = local.activate_apis
   labels                      = var.project_labels
   bucket_location             = var.default_region
+  project_sa_name             = var.project_sa_name
 }
 
 /******************************************
@@ -209,7 +210,8 @@ resource "google_cloudbuild_trigger" "main_trigger" {
     _TF_ACTION            = "apply"
   }
 
-  filename = var.cloudbuild_apply_filename
+  filename        = var.cloudbuild_apply_filename
+  service_account = google_service_account.cloudbuild_sa.id
   depends_on = [
     google_sourcerepo_repository.gcp_repo,
   ]
@@ -241,7 +243,8 @@ resource "google_cloudbuild_trigger" "non_main_trigger" {
     _TF_ACTION            = "plan"
   }
 
-  filename = var.cloudbuild_plan_filename
+  filename        = var.cloudbuild_plan_filename
+  service_account = google_service_account.cloudbuild_sa.id
   depends_on = [
     google_sourcerepo_repository.gcp_repo,
   ]

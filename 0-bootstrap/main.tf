@@ -120,6 +120,7 @@ module "cloudbuild_bootstrap" {
   terraform_validator_release = "v0.4.0"
   terraform_version           = "1.0.9"
   terraform_version_sha256sum = "f06ac64c6a14ed6a923d255788e4a5daefa2b50e35f32d7a3b5a2f9a5a91e255"
+  project_sa_name             = "cicd-runner-sa"
 
   activate_apis = [
     "admin.googleapis.com",
@@ -180,33 +181,25 @@ resource "google_project_iam_member" "project_source_reader" {
   ]
 }
 
-data "google_project" "cloudbuild" {
-  project_id = module.cloudbuild_bootstrap.cloudbuild_project_id
-
-  depends_on = [
-    module.cloudbuild_bootstrap.csr_repos
-  ]
-}
-
 resource "google_organization_iam_member" "org_cb_sa_browser" {
   count  = var.parent_folder == "" ? 1 : 0
   org_id = var.org_id
   role   = "roles/browser"
-  member = "serviceAccount:${data.google_project.cloudbuild.number}@cloudbuild.gserviceaccount.com"
+  member = "serviceAccount:${module.cloudbuild_bootstrap.cloudbuild_sa_email}"
 }
 
 resource "google_organization_iam_member" "org_cb_sa_gke" {
   count  = var.parent_folder == "" ? 1 : 0
   org_id = var.org_id
   role   = "roles/container.clusterAdmin"
-  member = "serviceAccount:${data.google_project.cloudbuild.number}@cloudbuild.gserviceaccount.com"
+  member = "serviceAccount:${module.cloudbuild_bootstrap.cloudbuild_sa_email}"
 }
 
 resource "google_organization_iam_member" "org_cb_sa_gke2" {
   count  = var.parent_folder == "" ? 1 : 0
   org_id = var.org_id
   role   = "roles/container.admin"
-  member = "serviceAccount:${data.google_project.cloudbuild.number}@cloudbuild.gserviceaccount.com"
+  member = "serviceAccount:${module.cloudbuild_bootstrap.cloudbuild_sa_email}"
 }
 
 
@@ -214,7 +207,7 @@ resource "google_folder_iam_member" "folder_cb_sa_browser" {
   count  = var.parent_folder != "" ? 1 : 0
   folder = var.parent_folder
   role   = "roles/browser"
-  member = "serviceAccount:${data.google_project.cloudbuild.number}@cloudbuild.gserviceaccount.com"
+  member = "serviceAccount:${module.cloudbuild_bootstrap.cloudbuild_sa_email}"
 }
 
 resource "google_organization_iam_member" "org_tf_compute_security_policy_admin" {

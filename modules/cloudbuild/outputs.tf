@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+# Project factory SA used as the identity for GH runner VMs (cicd-runner-sa).
+# This SA has a smaller permission set — only what runner VMs need to operate.
 output "project_service_account" {
   value = module.cloudbuild_project.service_account_email
 }
@@ -45,4 +47,12 @@ output "kms_crypto_key" {
 output "tf_runner_artifact_repo" {
   description = "GAR Repo created to store runner images"
   value       = google_artifact_registry_repository.tf-image-repo.name
+}
+
+# Custom Cloud Build SA used for pipeline execution (cloudbuild-runner-sa).
+# This SA has elevated permissions: org-level roles, SA impersonation, and
+# state/artifact bucket access. Kept separate from the runner VM SA for security.
+output "cloudbuild_sa_email" {
+  description = "Email of the custom Cloud Build runner service account."
+  value       = google_service_account.cloudbuild_sa.email
 }

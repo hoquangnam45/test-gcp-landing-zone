@@ -13,7 +13,7 @@ resource "google_project_iam_member" "cb_sa_prj_perms" {
 
   project = module.cloudbuild_bootstrap.cloudbuild_project_id
   role    = each.value
-  member  = "serviceAccount:${data.google_project.cloudbuild.number}@cloudbuild.gserviceaccount.com"
+  member  = "serviceAccount:${module.cloudbuild_bootstrap.cloudbuild_sa_email}"
 }
 
 # cloudbuild service account org level permissions
@@ -22,7 +22,7 @@ resource "google_organization_iam_member" "cb_sa_org_perms" {
 
   org_id = var.org_id
   role   = each.value
-  member = "serviceAccount:${data.google_project.cloudbuild.number}@cloudbuild.gserviceaccount.com"
+  member = "serviceAccount:${module.cloudbuild_bootstrap.cloudbuild_sa_email}"
 }
 
 # group org admins perms org level
@@ -38,7 +38,7 @@ resource "google_storage_bucket_iam_member" "state_bucket_cb_sa_perms" {
 
   bucket = module.seed_bootstrap.gcs_bucket_tfstate
   role   = each.value
-  member = "serviceAccount:${data.google_project.cloudbuild.number}@cloudbuild.gserviceaccount.com"
+  member = "serviceAccount:${module.cloudbuild_bootstrap.cloudbuild_sa_email}"
 }
 
 # state bucket permissions for project runner sa
@@ -61,7 +61,7 @@ resource "google_storage_bucket_iam_member" "state_bucket_orgtf_sa_perms" {
 resource "google_storage_bucket_iam_member" "cb_bucket_cb_sa_perms" {
   for_each = toset(local.cb_bucket_cb_sa_perms)
 
-  bucket = "${module.cloudbuild_bootstrap.cloudbuild_project_id}_cloudbuild"
+  bucket = module.cloudbuild_bootstrap.gcs_bucket_cloudbuild_artifacts
   role   = each.value
-  member = "serviceAccount:${data.google_project.cloudbuild.number}@cloudbuild.gserviceaccount.com"
+  member = "serviceAccount:${module.cloudbuild_bootstrap.cloudbuild_sa_email}"
 }
